@@ -1,2 +1,2 @@
-# -tcgcollector-api-sdk-go
+# tcgcollector-api-sdk-go
 The TCG Collector API SDK for Go.
