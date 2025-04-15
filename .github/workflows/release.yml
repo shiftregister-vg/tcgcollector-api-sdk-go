@@ -34,7 +34,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG=${GITHUB_REF#refs/tags/}
+          
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 $TAG^ 2>/dev/null || echo "")
+          
+          # Generate release notes
+          if [ -z "$PREV_TAG" ]; then
+            NOTES="## Initial Release $TAG\n\n$(git log --pretty=format:"- %s (%h)" $TAG)"
+          else
+            NOTES="## Changes since $PREV_TAG\n\n$(git log --pretty=format:"- %s (%h)" $PREV_TAG..$TAG)"
+          fi
+          
+          # Create the release
           gh release create $TAG \
             --title "$TAG" \
-            --notes "Release $TAG" \
-            --generate-notes 
+            --notes "$NOTES" 
