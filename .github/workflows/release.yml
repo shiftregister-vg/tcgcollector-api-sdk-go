@@ -56,11 +56,34 @@ jobs:
           echo "## Contributors" >> release_notes.md
           echo "" >> release_notes.md
           
+          # Get unique contributor emails
           if [ -z "$PREV_TAG" ]; then
-            git log --pretty=format:"- %an" $TAG | sort -u >> release_notes.md
+            CONTRIBUTOR_EMAILS=$(git log --pretty=format:"%ae" $TAG | sort -u)
           else
-            git log --pretty=format:"- %an" $PREV_TAG..$TAG | sort -u >> release_notes.md
+            CONTRIBUTOR_EMAILS=$(git log --pretty=format:"%ae" $PREV_TAG..$TAG | sort -u)
           fi
+          
+          # Get GitHub usernames and create links
+          for email in $CONTRIBUTOR_EMAILS; do
+            # Get the author name
+            AUTHOR_NAME=$(git log --pretty=format:"%an" --author="$email" -1)
+            
+            # Try to get GitHub username from commit email
+            if [[ $email == *"@users.noreply.github.com"* ]]; then
+              USERNAME=$(echo $email | sed 's/@users.noreply.github.com//')
+            else
+              # Fallback to searching GitHub API
+              USERNAME=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/search/users?q=$email" | \
+                jq -r '.items[0].login // empty')
+            fi
+            
+            if [ -n "$USERNAME" ]; then
+              echo "- [@$USERNAME](https://github.com/$USERNAME) ($AUTHOR_NAME)" >> release_notes.md
+            else
+              echo "- $AUTHOR_NAME" >> release_notes.md
+            fi
+          done
           
           # Create the release
           gh release create $TAG \
