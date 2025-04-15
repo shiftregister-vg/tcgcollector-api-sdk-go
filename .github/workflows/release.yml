@@ -40,9 +40,13 @@ jobs:
           
           # Generate release notes
           if [ -z "$PREV_TAG" ]; then
-            NOTES="## Initial Release $TAG\n\n$(git log --pretty=format:"- %s (%h)" $TAG)"
+            CHANGES=$(git log --pretty=format:"- %s (%h)" $TAG)
+            CONTRIBUTORS=$(git log --pretty=format:"- %an" $TAG | sort -u)
+            NOTES="# Release $TAG\n\n## Changes\n\n$CHANGES\n\n## Contributors\n\n$CONTRIBUTORS"
           else
-            NOTES="## Changes since $PREV_TAG\n\n$(git log --pretty=format:"- %s (%h)" $PREV_TAG..$TAG)"
+            CHANGES=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..$TAG)
+            CONTRIBUTORS=$(git log --pretty=format:"- %an" $PREV_TAG..$TAG | sort -u)
+            NOTES="# Release $TAG\n\n## Changes since $PREV_TAG\n\n$CHANGES\n\n## Contributors\n\n$CONTRIBUTORS"
           fi
           
           # Create the release
