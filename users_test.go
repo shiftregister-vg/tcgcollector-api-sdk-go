@@ -481,3 +481,65 @@ func TestRevokeAPIAccessToken(t *testing.T) {
 	err := client.RevokeAPIAccessToken(context.Background(), 1)
 	assert.NoError(t, err)
 }
+
+func TestGetUserPreferences(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/users/1/preferences", r.URL.Path)
+
+		// Create mock response
+		response := UserPreferences{
+			ID:              1,
+			UserID:          1,
+			DefaultCurrency: "USD",
+			Language:        "en",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+
+	result, err := client.GetUserPreferences(context.Background(), 1)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, 1, result.ID)
+	assert.Equal(t, "USD", result.DefaultCurrency)
+	assert.Equal(t, "en", result.Language)
+}
+
+func TestUpdateUserPreferences(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPut, r.Method)
+		assert.Equal(t, "/api/users/1/preferences", r.URL.Path)
+
+		// Create mock response
+		response := UserPreferences{
+			ID:              1,
+			UserID:          1,
+			DefaultCurrency: "EUR",
+			Language:        "fr",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+
+	preferences := &UserPreferences{
+		DefaultCurrency: "EUR",
+		Language:        "fr",
+	}
+
+	result, err := client.UpdateUserPreferences(context.Background(), 1, preferences)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "EUR", result.DefaultCurrency)
+	assert.Equal(t, "fr", result.Language)
+}

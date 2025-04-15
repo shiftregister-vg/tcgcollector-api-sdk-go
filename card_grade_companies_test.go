@@ -78,3 +78,69 @@ func TestGetCardGradeCompany(t *testing.T) {
 	assert.Equal(t, "Professional Sports Authenticator", company.Description)
 	assert.Equal(t, "https://www.psacard.com", company.Website)
 }
+
+func TestListCardGradeCompaniesError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{
+			"message": "Internal server error",
+			"code": "INTERNAL_ERROR"
+		}`)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	companies, err := client.ListCardGradeCompanies(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, companies)
+	assert.Contains(t, err.Error(), "Internal server error")
+}
+
+func TestListCardGradeCompaniesInvalidResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	companies, err := client.ListCardGradeCompanies(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, companies)
+	assert.Contains(t, err.Error(), "invalid character")
+}
+
+func TestGetCardGradeCompanyError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{
+			"message": "Card grade company not found",
+			"code": "NOT_FOUND"
+		}`)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	company, err := client.GetCardGradeCompany(context.Background(), 999)
+	assert.Error(t, err)
+	assert.Nil(t, company)
+	assert.Contains(t, err.Error(), "Card grade company not found")
+}
+
+func TestGetCardGradeCompanyInvalidResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	company, err := client.GetCardGradeCompany(context.Background(), 1)
+	assert.Error(t, err)
+	assert.Nil(t, company)
+	assert.Contains(t, err.Error(), "invalid character")
+}

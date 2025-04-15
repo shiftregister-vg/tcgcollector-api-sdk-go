@@ -76,3 +76,81 @@ func TestGetCardIllustrator(t *testing.T) {
 	assert.Equal(t, "Original Pokemon illustrator", illustrator.Description)
 	assert.Equal(t, "https://example.com/sugimori.jpg", illustrator.ImageURL)
 }
+
+func TestListCardIllustratorsError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/card-illustrators", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{
+			"message": "Internal server error",
+			"code": "INTERNAL_ERROR"
+		}`)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	illustrators, err := client.ListCardIllustrators(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, illustrators)
+	assert.Contains(t, err.Error(), "Internal server error")
+}
+
+func TestListCardIllustratorsInvalidJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/card-illustrators", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	illustrators, err := client.ListCardIllustrators(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, illustrators)
+	assert.Contains(t, err.Error(), "invalid character")
+}
+
+func TestGetCardIllustratorNotFound(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/card-illustrators/999", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{
+			"message": "Card illustrator not found",
+			"code": "NOT_FOUND"
+		}`)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	illustrator, err := client.GetCardIllustrator(context.Background(), 999)
+	assert.Error(t, err)
+	assert.Nil(t, illustrator)
+	assert.Contains(t, err.Error(), "Card illustrator not found")
+}
+
+func TestGetCardIllustratorInvalidJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/api/card-illustrators/1", r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	illustrator, err := client.GetCardIllustrator(context.Background(), 1)
+	assert.Error(t, err)
+	assert.Nil(t, illustrator)
+	assert.Contains(t, err.Error(), "invalid character")
+}

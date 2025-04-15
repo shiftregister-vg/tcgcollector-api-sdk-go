@@ -47,9 +47,15 @@ func NewClient(apiKey string, opts ...ClientOption) *Client {
 // WithBaseURL sets the base URL for the client
 func WithBaseURL(baseURL string) ClientOption {
 	return func(c *Client) {
+		if baseURL == "" {
+			panic("base URL cannot be empty")
+		}
 		u, err := url.Parse(baseURL)
 		if err != nil {
 			panic(fmt.Sprintf("invalid base URL: %v", err))
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			panic(fmt.Sprintf("invalid base URL scheme: %s (must be http or https)", u.Scheme))
 		}
 		c.baseURL = u
 	}

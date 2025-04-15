@@ -2,9 +2,12 @@ package tcgcollector
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestListImages(t *testing.T) {
@@ -163,25 +166,48 @@ func TestCreateImage(t *testing.T) {
 }
 
 func TestDeleteImage(t *testing.T) {
-	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			t.Errorf("Expected DELETE request, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/images/1" {
-			t.Errorf("Expected path /api/images/1, got %s", r.URL.Path)
-		}
+		assert.Equal(t, http.MethodDelete, r.Method)
+		assert.Equal(t, "/api/images/1", r.URL.Path)
+		assert.Equal(t, "Bearer test-api-key", r.Header.Get("Authorization"))
+		assert.Equal(t, "application/json", r.Header.Get("Accept"))
 
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer ts.Close()
 
-	// Create client with test server URL
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-
-	// Make request
 	err := client.DeleteImage(context.Background(), 1)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	assert.NoError(t, err)
+}
+
+func TestDeleteImageError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Message: "Image not found",
+			Code:    "NOT_FOUND",
+		})
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	err := client.DeleteImage(context.Background(), 999)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Image not found")
+}
+
+func TestDeleteImageInvalidResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("invalid json"))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	err := client.DeleteImage(context.Background(), 1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decode response")
 }

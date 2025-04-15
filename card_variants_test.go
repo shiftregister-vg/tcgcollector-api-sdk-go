@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestListCardVariants(t *testing.T) {
@@ -274,9 +272,10 @@ func TestGetCardVariantPrices(t *testing.T) {
 					"id": 1,
 					"variantId": 1,
 					"price": 10.99,
-					"currency": "USD",
-					"source": "TCGPlayer",
-					"createdAt": "2024-01-01T00:00:00Z"
+					"currencyId": 1,
+					"sourceId": 1,
+					"createdAt": "2024-01-01T00:00:00Z",
+					"updatedAt": "2024-01-01T00:00:00Z"
 				}
 			],
 			"itemCount": 1,
@@ -303,20 +302,34 @@ func TestGetCardVariantPrices(t *testing.T) {
 	if result.Items[0].ID != 1 {
 		t.Errorf("Expected item ID to be 1, got %d", result.Items[0].ID)
 	}
+	if result.Items[0].VariantID != 1 {
+		t.Errorf("Expected variant ID to be 1, got %d", result.Items[0].VariantID)
+	}
 	if result.Items[0].Price != 10.99 {
 		t.Errorf("Expected price to be 10.99, got %f", result.Items[0].Price)
 	}
 }
 
 func TestRecalculateComputedAndCachedValues(t *testing.T) {
+	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/api/card-variants/recalculate-computed-and-cached-values", r.URL.Path)
-		w.WriteHeader(http.StatusOK)
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST request, got %s", r.Method)
+		}
+		if r.URL.Path != "/api/card-variants/recalculate-computed-and-cached-values" {
+			t.Errorf("Expected path /api/card-variants/recalculate-computed-and-cached-values, got %s", r.URL.Path)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer ts.Close()
 
+	// Create client with test server URL
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+
+	// Make request
 	err := client.RecalculateComputedAndCachedValues(context.Background())
-	assert.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
 }
