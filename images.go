@@ -73,5 +73,16 @@ func (c *Client) CreateImage(ctx context.Context, params *CreateImageParams) (*I
 
 // DeleteImage deletes an image
 func (c *Client) DeleteImage(ctx context.Context, id int) error {
-	return c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/images/%d", id), nil, nil)
+	var response struct {
+		Message string `json:"message"`
+	}
+	err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/images/%d", id), nil, &response)
+	if err != nil {
+		// If the error is due to EOF and the status code was 204, that's expected
+		if err.Error() == "failed to decode response: EOF" {
+			return nil
+		}
+		return err
+	}
+	return nil
 }

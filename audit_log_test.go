@@ -140,3 +140,136 @@ func TestGetAuditLogEntry(t *testing.T) {
 		t.Errorf("Expected IPAddress to be '127.0.0.1', got %s", result.IPAddress)
 	}
 }
+
+func TestListAuditLogEntriesWithNilParams(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("Expected GET request, got %s", r.Method)
+		}
+		if r.URL.Path != "/api/audit-log" {
+			t.Errorf("Expected path /api/audit-log, got %s", r.URL.Path)
+		}
+		if len(r.URL.Query()) != 0 {
+			t.Errorf("Expected no query parameters, got %v", r.URL.Query())
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{
+			"items": [],
+			"itemCount": 0,
+			"totalItemCount": 0,
+			"page": 1,
+			"pageCount": 1
+		}`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	result, err := client.ListAuditLogEntries(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if len(result.Items) != 0 {
+		t.Errorf("Expected 0 items, got %d", len(result.Items))
+	}
+}
+
+func TestListAuditLogEntriesError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{
+			"message": "Internal server error",
+			"code": "INTERNAL_ERROR"
+		}`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	result, err := client.ListAuditLogEntries(context.Background(), nil)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if result != nil {
+		t.Errorf("Expected nil result, got %v", result)
+	}
+}
+
+func TestListAuditLogEntriesInvalidJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	result, err := client.ListAuditLogEntries(context.Background(), nil)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if result != nil {
+		t.Errorf("Expected nil result, got %v", result)
+	}
+}
+
+func TestGetAuditLogEntryNotFound(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{
+			"message": "Audit log entry not found",
+			"code": "NOT_FOUND"
+		}`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	result, err := client.GetAuditLogEntry(context.Background(), 999)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if result != nil {
+		t.Errorf("Expected nil result, got %v", result)
+	}
+}
+
+func TestGetAuditLogEntryError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{
+			"message": "Internal server error",
+			"code": "INTERNAL_ERROR"
+		}`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	result, err := client.GetAuditLogEntry(context.Background(), 1)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if result != nil {
+		t.Errorf("Expected nil result, got %v", result)
+	}
+}
+
+func TestGetAuditLogEntryInvalidJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	result, err := client.GetAuditLogEntry(context.Background(), 1)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+	if result != nil {
+		t.Errorf("Expected nil result, got %v", result)
+	}
+}

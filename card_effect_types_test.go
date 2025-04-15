@@ -72,3 +72,69 @@ func TestGetCardEffectType(t *testing.T) {
 	assert.Equal(t, "Ability", effectType.Name)
 	assert.Equal(t, "A special ability that can be used during the game", effectType.Description)
 }
+
+func TestListCardEffectTypesError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{
+			"message": "Internal server error",
+			"code": "INTERNAL_ERROR"
+		}`)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	effectTypes, err := client.ListCardEffectTypes(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, effectTypes)
+	assert.Contains(t, err.Error(), "Internal server error")
+}
+
+func TestListCardEffectTypesInvalidResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	effectTypes, err := client.ListCardEffectTypes(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, effectTypes)
+	assert.Contains(t, err.Error(), "invalid character")
+}
+
+func TestGetCardEffectTypeError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{
+			"message": "Card effect type not found",
+			"code": "NOT_FOUND"
+		}`)
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	effectType, err := client.GetCardEffectType(context.Background(), 999)
+	assert.Error(t, err)
+	assert.Nil(t, effectType)
+	assert.Contains(t, err.Error(), "Card effect type not found")
+}
+
+func TestGetCardEffectTypeInvalidResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`invalid json`))
+	}))
+	defer ts.Close()
+
+	client := NewClient("test-api-key", WithBaseURL(ts.URL))
+	effectType, err := client.GetCardEffectType(context.Background(), 1)
+	assert.Error(t, err)
+	assert.Nil(t, effectType)
+	assert.Contains(t, err.Error(), "invalid character")
+}

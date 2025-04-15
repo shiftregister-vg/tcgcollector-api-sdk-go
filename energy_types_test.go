@@ -10,25 +10,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestListCardFormats(t *testing.T) {
+func TestListEnergyTypes(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, "/api/card-formats", r.URL.Path)
+		assert.Equal(t, "/api/energy-types", r.URL.Path)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `[
 			{
 				"id": 1,
-				"name": "Standard",
-				"description": "The standard format for competitive play",
+				"name": "Fire",
+				"description": "Fire energy type",
+				"symbol": "🔥",
 				"createdAt": "2024-01-01T00:00:00Z",
 				"updatedAt": "2024-01-01T00:00:00Z"
 			},
 			{
 				"id": 2,
-				"name": "Expanded",
-				"description": "The expanded format allowing older cards",
+				"name": "Water",
+				"description": "Water energy type",
+				"symbol": "💧",
 				"createdAt": "2024-01-01T00:00:00Z",
 				"updatedAt": "2024-01-01T00:00:00Z"
 			}
@@ -37,28 +39,31 @@ func TestListCardFormats(t *testing.T) {
 	defer ts.Close()
 
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-	formats, err := client.ListCardFormats(context.Background())
+	energyTypes, err := client.ListEnergyTypes(context.Background())
 	assert.NoError(t, err)
-	assert.Len(t, formats, 2)
-	assert.Equal(t, 1, formats[0].ID)
-	assert.Equal(t, "Standard", formats[0].Name)
-	assert.Equal(t, "The standard format for competitive play", formats[0].Description)
-	assert.Equal(t, 2, formats[1].ID)
-	assert.Equal(t, "Expanded", formats[1].Name)
-	assert.Equal(t, "The expanded format allowing older cards", formats[1].Description)
+	assert.Len(t, energyTypes, 2)
+	assert.Equal(t, 1, energyTypes[0].ID)
+	assert.Equal(t, "Fire", energyTypes[0].Name)
+	assert.Equal(t, "Fire energy type", energyTypes[0].Description)
+	assert.Equal(t, "🔥", energyTypes[0].Symbol)
+	assert.Equal(t, 2, energyTypes[1].ID)
+	assert.Equal(t, "Water", energyTypes[1].Name)
+	assert.Equal(t, "Water energy type", energyTypes[1].Description)
+	assert.Equal(t, "💧", energyTypes[1].Symbol)
 }
 
-func TestGetCardFormat(t *testing.T) {
+func TestGetEnergyType(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodGet, r.Method)
-		assert.Equal(t, "/api/card-formats/1", r.URL.Path)
+		assert.Equal(t, "/api/energy-types/1", r.URL.Path)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{
 			"id": 1,
-			"name": "Standard",
-			"description": "The standard format for competitive play",
+			"name": "Fire",
+			"description": "Fire energy type",
+			"symbol": "🔥",
 			"createdAt": "2024-01-01T00:00:00Z",
 			"updatedAt": "2024-01-01T00:00:00Z"
 		}`)
@@ -66,14 +71,15 @@ func TestGetCardFormat(t *testing.T) {
 	defer ts.Close()
 
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-	format, err := client.GetCardFormat(context.Background(), 1)
+	energyType, err := client.GetEnergyType(context.Background(), 1)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, format.ID)
-	assert.Equal(t, "Standard", format.Name)
-	assert.Equal(t, "The standard format for competitive play", format.Description)
+	assert.Equal(t, 1, energyType.ID)
+	assert.Equal(t, "Fire", energyType.Name)
+	assert.Equal(t, "Fire energy type", energyType.Description)
+	assert.Equal(t, "🔥", energyType.Symbol)
 }
 
-func TestListCardFormatsError(t *testing.T) {
+func TestListEnergyTypesError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -85,13 +91,13 @@ func TestListCardFormatsError(t *testing.T) {
 	defer ts.Close()
 
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-	formats, err := client.ListCardFormats(context.Background())
+	energyTypes, err := client.ListEnergyTypes(context.Background())
 	assert.Error(t, err)
-	assert.Nil(t, formats)
+	assert.Nil(t, energyTypes)
 	assert.Contains(t, err.Error(), "Internal server error")
 }
 
-func TestListCardFormatsInvalidResponse(t *testing.T) {
+func TestListEnergyTypesInvalidResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -100,31 +106,31 @@ func TestListCardFormatsInvalidResponse(t *testing.T) {
 	defer ts.Close()
 
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-	formats, err := client.ListCardFormats(context.Background())
+	energyTypes, err := client.ListEnergyTypes(context.Background())
 	assert.Error(t, err)
-	assert.Nil(t, formats)
+	assert.Nil(t, energyTypes)
 	assert.Contains(t, err.Error(), "invalid character")
 }
 
-func TestGetCardFormatError(t *testing.T) {
+func TestGetEnergyTypeError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprint(w, `{
-			"message": "Card format not found",
+			"message": "Energy type not found",
 			"code": "NOT_FOUND"
 		}`)
 	}))
 	defer ts.Close()
 
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-	format, err := client.GetCardFormat(context.Background(), 999)
+	energyType, err := client.GetEnergyType(context.Background(), 999)
 	assert.Error(t, err)
-	assert.Nil(t, format)
-	assert.Contains(t, err.Error(), "Card format not found")
+	assert.Nil(t, energyType)
+	assert.Contains(t, err.Error(), "Energy type not found")
 }
 
-func TestGetCardFormatInvalidResponse(t *testing.T) {
+func TestGetEnergyTypeInvalidResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -133,8 +139,8 @@ func TestGetCardFormatInvalidResponse(t *testing.T) {
 	defer ts.Close()
 
 	client := NewClient("test-api-key", WithBaseURL(ts.URL))
-	format, err := client.GetCardFormat(context.Background(), 1)
+	energyType, err := client.GetEnergyType(context.Background(), 1)
 	assert.Error(t, err)
-	assert.Nil(t, format)
+	assert.Nil(t, energyType)
 	assert.Contains(t, err.Error(), "invalid character")
 }
