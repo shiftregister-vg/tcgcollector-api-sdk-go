@@ -38,40 +38,31 @@ jobs:
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 $TAG^ 2>/dev/null || echo "")
           
-          # Generate release notes
+          # Create release notes file
+          echo "# Release $TAG" > release_notes.md
+          echo "" >> release_notes.md
+          
           if [ -z "$PREV_TAG" ]; then
-            CHANGES=$(git log --pretty=format:"- %s (%h)" $TAG)
-            CONTRIBUTORS=$(git log --pretty=format:"- %an" $TAG | sort -u)
-            NOTES=$(cat <<'EOF'
-# Release $TAG
-
-## Changes
-
-$CHANGES
-
-## Contributors
-
-$CONTRIBUTORS
-EOF
-)
+            echo "## Changes" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s (%h)" $TAG >> release_notes.md
           else
-            CHANGES=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..$TAG)
-            CONTRIBUTORS=$(git log --pretty=format:"- %an" $PREV_TAG..$TAG | sort -u)
-            NOTES=$(cat <<'EOF'
-# Release $TAG
-
-## Changes since $PREV_TAG
-
-$CHANGES
-
-## Contributors
-
-$CONTRIBUTORS
-EOF
-)
+            echo "## Changes since $PREV_TAG" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s (%h)" $PREV_TAG..$TAG >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "## Contributors" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          if [ -z "$PREV_TAG" ]; then
+            git log --pretty=format:"- %an" $TAG | sort -u >> release_notes.md
+          else
+            git log --pretty=format:"- %an" $PREV_TAG..$TAG | sort -u >> release_notes.md
           fi
           
           # Create the release
           gh release create $TAG \
             --title "$TAG" \
-            --notes "$NOTES" 
+            --notes-file release_notes.md 
