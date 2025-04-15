@@ -42,7 +42,7 @@ jobs:
           if [ -z "$PREV_TAG" ]; then
             CHANGES=$(git log --pretty=format:"- %s (%h)" $TAG)
             CONTRIBUTORS=$(git log --pretty=format:"- %an" $TAG | sort -u)
-            NOTES=$(cat <<EOF
+            NOTES=$(cat <<'EOF'
 # Release $TAG
 
 ## Changes
@@ -57,7 +57,7 @@ EOF
           else
             CHANGES=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..$TAG)
             CONTRIBUTORS=$(git log --pretty=format:"- %an" $PREV_TAG..$TAG | sort -u)
-            NOTES=$(cat <<EOF
+            NOTES=$(cat <<'EOF'
 # Release $TAG
 
 ## Changes since $PREV_TAG
