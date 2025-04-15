@@ -1,5 +1,8 @@
 # TCGCollector API SDK for Go
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/shiftregister-vg/tcgcollector-api-sdk-go.svg)](https://pkg.go.dev/github.com/shiftregister-vg/tcgcollector-api-sdk-go)
+[![Test Coverage](https://img.shields.io/badge/coverage-91.6%25-brightgreen)](https://github.com/shiftregister-vg/tcgcollector-api-sdk-go/actions/workflows/test.yml)
+
 A Go SDK for interacting with the TCGCollector API. This SDK provides a convenient way to access all endpoints of the TCGCollector API with proper authentication, error handling, and type safety.
 
 ## Installation
